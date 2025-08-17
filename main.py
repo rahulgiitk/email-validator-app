@@ -17,7 +17,6 @@ def has_mx_record(domain: str) -> str:
     """Check if MX record exists and return mail server"""
     try:
         answers = dns.resolver.resolve(domain, "MX")
-        # Pick the first MX record
         mx_record = str(answers[0].exchange).rstrip(".")
         return mx_record
     except Exception as e:
@@ -35,7 +34,6 @@ def smtp_check(email: str, mx_record: str) -> bool:
         code, message = server.rcpt(email)
         server.quit()
         logger.info(f"SMTP check for {email} -> {code} {message}")
-        # 250 means accepted, 550 means rejected
         return code == 250
     except Exception as e:
         logger.error(f"SMTP validation failed for {email}: {e}")
@@ -49,31 +47,46 @@ def index():
 
 @app.route("/validate", methods=["POST"])
 def validate_email():
+    results = {
+        "format": "❌ Invalid format",
+        "mx": "⏳ Skipped",
+        "smtp": "⏳ Skipped"
+    }
+
     try:
         data = request.get_json()
         email = data.get("email", "")
 
+        # Step 1: Regex check
         if not EMAIL_REGEX.match(email):
-            logger.info(f"Invalid format: {email}")
-            return jsonify({"message": "❌ Invalid Email Address Format"})
+            results["format"] = "❌ Invalid Email Address Format"
+            return jsonify(results)
 
-        # Extract domain
+        results["format"] = "✅ Valid format"
+
+        # Step 2: MX check
         domain = email.split("@")[-1]
-        logger.info(f"Checking MX records for domain: {domain}")
-
+        logger.info(f"Checking MX records for {domain}")
         mx_record = has_mx_record(domain)
-        if not mx_record:
-            return jsonify({"message": "⚠️ Valid format but no MX record found"})
 
-        # SMTP-level check
+        if not mx_record:
+            results["mx"] = "❌ No MX record found"
+            return jsonify(results)
+
+        results["mx"] = f"✅ MX record found ({mx_record})"
+
+        # Step 3: SMTP check
         if smtp_check(email, mx_record):
-            return jsonify({"message": "✅ Valid Email & Mailbox exists (SMTP confirmed)"})
+            results["smtp"] = "✅ Mailbox exists (SMTP confirmed)"
         else:
-            return jsonify({"message": "⚠️ Valid format, MX exists but mailbox not confirmed"})
+            results["smtp"] = "⚠️ MX found, but mailbox not confirmed"
+
+        return jsonify(results)
 
     except Exception as e:
         logger.exception(f"Unexpected error validating {email}: {e}")
-        return jsonify({"message": f"❌ Error validating email: {str(e)}"}), 500
+        results["smtp"] = f"❌ Error: {str(e)}"
+        return jsonify(results), 500
 
 
 if __name__ == "__main__":
