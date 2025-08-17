@@ -24,22 +24,6 @@ def has_mx_record(domain: str) -> str:
         return None
 
 
-def smtp_check(email: str, mx_record: str) -> bool:
-    """Try SMTP connection and RCPT TO check"""
-    try:
-        server = smtplib.SMTP(timeout=10)
-        server.connect(mx_record)
-        server.helo("example.com")  # pretend domain
-        server.mail("test@example.com")  # fake sender
-        code, message = server.rcpt(email)
-        server.quit()
-        logger.info(f"SMTP check for {email} -> {code} {message}")
-        return code == 250
-    except Exception as e:
-        logger.error(f"SMTP validation failed for {email}: {e}")
-        return False
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -74,12 +58,6 @@ def validate_email():
             return jsonify(results)
 
         results["mx"] = f"✅ MX record found ({mx_record})"
-
-        # Step 3: SMTP check
-        if smtp_check(email, mx_record):
-            results["smtp"] = "✅ Mailbox exists (SMTP confirmed)"
-        else:
-            results["smtp"] = "⚠️ MX found, but mailbox not confirmed"
 
         return jsonify(results)
 
