@@ -24,7 +24,6 @@
         <div class="result">
             <p id="format"></p>
             <p id="mx"></p>
-            <p id="smtp"></p>
         </div>
     </div>
 
@@ -36,7 +35,6 @@
             // Reset messages
             document.getElementById("format").innerText = "⏳ Checking format...";
             document.getElementById("mx").innerText = "";
-            document.getElementById("smtp").innerText = "";
 
             const response = await fetch("/validate", {
                 method: "POST",
@@ -48,7 +46,6 @@
 
             document.getElementById("format").innerText = data.format;
             document.getElementById("mx").innerText = data.mx;
-            document.getElementById("smtp").innerText = data.smtp;
         });
     </script>
 </body>
