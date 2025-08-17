@@ -4,11 +4,14 @@
     <title>Email Validator</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 50px; }
-        .container { max-width: 400px; margin: auto; }
-        input { width: 100%; padding: 10px; margin-top: 10px; }
-        button { margin-top: 15px; padding: 10px; width: 100%; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        .container { max-width: 500px; margin: auto; }
+        input, button { width: 100%; padding: 10px; margin-top: 10px; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background: #45a049; }
-        .result { margin-top: 20px; font-weight: bold; }
+        .result { margin-top: 20px; padding: 10px; border-radius: 8px; }
+        .valid { color: green; }
+        .invalid { color: red; }
+        .warning { color: orange; }
     </style>
 </head>
 <body>
@@ -18,20 +21,34 @@
             <input type="text" id="email" placeholder="Enter your email" required />
             <button type="submit">Validate</button>
         </form>
-        <div class="result" id="result"></div>
+        <div class="result">
+            <p id="format"></p>
+            <p id="mx"></p>
+            <p id="smtp"></p>
+        </div>
     </div>
 
     <script>
         document.getElementById("emailForm").addEventListener("submit", async function(event) {
             event.preventDefault();
             const email = document.getElementById("email").value;
+
+            // Reset messages
+            document.getElementById("format").innerText = "⏳ Checking format...";
+            document.getElementById("mx").innerText = "";
+            document.getElementById("smtp").innerText = "";
+
             const response = await fetch("/validate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email })
             });
+
             const data = await response.json();
-            document.getElementById("result").innerText = data.message;
+
+            document.getElementById("format").innerText = data.format;
+            document.getElementById("mx").innerText = data.mx;
+            document.getElementById("smtp").innerText = data.smtp;
         });
     </script>
 </body>
